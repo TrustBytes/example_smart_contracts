@@ -1,0 +1,9 @@
+[submodule "2024-03-kitty-connect/lib/forge-std"]
+	path = 2024-03-kitty-connect/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "2024-03-kitty-connect/lib/openzeppelin-contracts"]
+	path = 2024-03-kitty-connect/lib/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts
+[submodule "2024-03-kitty-connect/lib/ccip"]
+	path = 2024-03-kitty-connect/lib/ccip
+	url = https://github.com/smartcontractkit/ccip
