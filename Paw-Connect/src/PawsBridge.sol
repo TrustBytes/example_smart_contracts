@@ -1,31 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import {PawsBridgeBase} from "./base/PawsBridgeBase.sol";
+import {KittyBridgeBase} from "./base/KittyBridgeBase.sol";
 import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
 import {IERC20} from
     "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/contracts/token/ERC20/IERC20.sol";
-import {PawsConnect} from "./PawsConnect.sol";
+import {KittyConnect} from "./KittyConnect.sol";
 
 /**
- * @title PawsBridge
+ * @title KittyBridge
  * @author Shikhar Agarwal
- * @notice This contract allows users to bridge their Paws NFT from one chain to another chain via Chainlink CCIP
+ * @notice This contract allows users to bridge their Kitty NFT from one chain to another chain via Chainlink CCIP
  */
-contract PawsBridge is PawsBridgeBase, CCIPReceiver, Ownable {
+contract KittyBridge is KittyBridgeBase, CCIPReceiver, Ownable {
 
     /// @notice Constructor initializes the contract with the router address.
     /// @param _router The address of the router contract.
     /// @param _link The address of the link contract.
-    /// @param PawsConnectOwner The owner of PawsConnect contract
-    /// @dev This contract will be deployed by the PawsConnect contract during its creation
-    constructor(address _router, address _link, address PawsConnectOwner) CCIPReceiver(_router) {
-        _transferOwnership(PawsConnectOwner);
+    /// @param kittyConnectOwner The owner of KittyConnect contract
+    /// @dev This contract will be deployed by the KittyConnect contract during its creation
+    constructor(address _router, address _link, address kittyConnectOwner) CCIPReceiver(_router) {
+        _transferOwnership(kittyConnectOwner);
         s_linkToken = IERC20(_link);
-        PawsConnect = msg.sender;
+        kittyConnect = msg.sender;
         gaslimit = 400000;
     }
 
@@ -66,7 +66,7 @@ contract PawsBridge is PawsBridgeBase, CCIPReceiver, Ownable {
         uint256 fees = router.getFee(_destinationChainSelector, evm2AnyMessage);
 
         if (fees > s_linkToken.balanceOf(address(this))) {
-            revert PawsBridge__NotEnoughBalance(s_linkToken.balanceOf(address(this)), fees);
+            revert KittyBridge__NotEnoughBalance(s_linkToken.balanceOf(address(this)), fees);
         }
 
         messageId = router.ccipSend(_destinationChainSelector, evm2AnyMessage);
@@ -82,7 +82,7 @@ contract PawsBridge is PawsBridgeBase, CCIPReceiver, Ownable {
         override
         onlyAllowlisted(any2EvmMessage.sourceChainSelector, msg.sender)
     {
-        PawsConnect(PawsConnect).mintBridgedNFT(any2EvmMessage.data);
+        KittyConnect(kittyConnect).mintBridgedNFT(any2EvmMessage.data);
 
         emit MessageReceived(
             any2EvmMessage.messageId,
@@ -116,8 +116,8 @@ contract PawsBridge is PawsBridgeBase, CCIPReceiver, Ownable {
         gaslimit = gasLimit;
     }
 
-    function getPawsConnectAddr() external view returns (address) {
-        return address(PawsConnect);
+    function getKittyConnectAddr() external view returns (address) {
+        return address(kittyConnect);
     }
 
     function getGaslimit() external view returns (uint256) {
