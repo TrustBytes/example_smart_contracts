@@ -5,15 +5,15 @@ pragma solidity 0.8.19;
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { PawsBridge } from "./PawsBridge.sol";
+import { KittyBridge } from "./KittyBridge.sol";
 
 /**
- * @title PawsConnect
+ * @title KittyConnect
  * @author Shikhar Agarwal
  * @notice This contract allows users to buy a cute cat from our branches and mint NFT for buying a cat
  * The NFT will be used to track the cat info and all related data for a particular cat corresponding to their token ids
  */
-contract PawsConnect is ERC721 {
+contract KittyConnect is ERC721 {
     struct CatInfo {
         string catName;
         string breed;
@@ -25,13 +25,13 @@ contract PawsConnect is ERC721 {
     }
 
     // Storage Variables
-    uint256 private PawsTokenCounter;
-    address private immutable i_PawsConnectOwner;
-    mapping(address => bool) private s_isPawsShop;
-    address[] private s_PawsShops;
+    uint256 private kittyTokenCounter;
+    address private immutable i_kittyConnectOwner;
+    mapping(address => bool) private s_isKittyShop;
+    address[] private s_kittyShops;
     mapping(address user => uint256[]) private s_ownerToCatsTokenId;
     mapping(uint256 tokenId => CatInfo) private s_catInfo;
-    PawsBridge private immutable i_PawsBridge;
+    KittyBridge private immutable i_kittyBridge;
 
     // Events
     event ShopPartnerAdded(address partner);
@@ -42,30 +42,30 @@ contract PawsConnect is ERC721 {
     event NFTBridged(uint256 chainId, uint256 tokenId);
 
     // Modifiers
-    modifier onlyPawsConnectOwner() {
-        require(msg.sender == i_PawsConnectOwner, "PawsConnect__NotPawsConnectOwner");
+    modifier onlyKittyConnectOwner() {
+        require(msg.sender == i_kittyConnectOwner, "KittyConnect__NotKittyConnectOwner");
         _;
     }
 
     modifier onlyShopPartner() {
-        require(s_isPawsShop[msg.sender], "PawsConnect__NotAPartner");
+        require(s_isKittyShop[msg.sender], "KittyConnect__NotAPartner");
         _;
     }
 
-    modifier onlyPawsBridge() {
-        require(msg.sender == address(i_PawsBridge), "PawsConnect__NotPawsBridge");
+    modifier onlyKittyBridge() {
+        require(msg.sender == address(i_kittyBridge), "KittyConnect__NotKittyBridge");
         _;
     }
 
     // Constructor
-    constructor(address[] memory initShops, address router, address link) ERC721("PawsConnect", "KC") {
+    constructor(address[] memory initShops, address router, address link) ERC721("KittyConnect", "KC") {
         for (uint256 i = 0; i < initShops.length; i++) {
-            s_PawsShops.push(initShops[i]);
-            s_isPawsShop[initShops[i]] = true;
+            s_kittyShops.push(initShops[i]);
+            s_isKittyShop[initShops[i]] = true;
         }
 
-        i_PawsConnectOwner = msg.sender;
-        i_PawsBridge = new PawsBridge(router, link, msg.sender);
+        i_kittyConnectOwner = msg.sender;
+        i_kittyBridge = new KittyBridge(router, link, msg.sender);
     }
 
     // Functions
@@ -74,9 +74,9 @@ contract PawsConnect is ERC721 {
      * @notice Allows the owner of the protocol to add a new shop partner
      * @param shopAddress The address of new shop partner
      */
-    function addShop(address shopAddress) external onlyPawsConnectOwner {
-        s_isPawsShop[shopAddress] = true;
-        s_PawsShops.push(shopAddress);
+    function addShop(address shopAddress) external onlyKittyConnectOwner {
+        s_isKittyShop[shopAddress] = true;
+        s_kittyShops.push(shopAddress);
         emit ShopPartnerAdded(shopAddress);
     }
 
@@ -90,10 +90,10 @@ contract PawsConnect is ERC721 {
      * @dev Payments for the cat purchase takes off-chain and a corresponding NFT is minted to the owner which stores the info of cat
      */
     function mintCatToNewOwner(address catOwner, string memory catIpfsHash, string memory catName, string memory breed, uint256 dob) external onlyShopPartner {
-        require(!s_isPawsShop[catOwner], "PawsConnect__CatOwnerCantBeShopPartner");
+        require(!s_isKittyShop[catOwner], "KittyConnect__CatOwnerCantBeShopPartner");
 
-        uint256 tokenId = PawsTokenCounter;
-        PawsTokenCounter++;
+        uint256 tokenId = kittyTokenCounter;
+        kittyTokenCounter++;
 
         s_catInfo[tokenId] = CatInfo({
             catName: catName,
@@ -116,9 +116,9 @@ contract PawsConnect is ERC721 {
      * @notice but requires the approval of the cat owner to the new owner before shop partner calls this
      */
     function safeTransferFrom(address currCatOwner, address newOwner, uint256 tokenId, bytes memory data) public override onlyShopPartner {
-        require(_ownerOf(tokenId) == currCatOwner, "PawsConnect__NotPawsOwner");
+        require(_ownerOf(tokenId) == currCatOwner, "KittyConnect__NotKittyOwner");
 
-        require(getApproved(tokenId) == newOwner, "PawsConnect__NewOwnerNotApproved");
+        require(getApproved(tokenId) == newOwner, "KittyConnect__NewOwnerNotApproved");
 
         _updateOwnershipInfo(currCatOwner, newOwner, tokenId);
 
@@ -148,10 +148,10 @@ contract PawsConnect is ERC721 {
         }
 
         emit NFTBridgeRequestSent(block.chainid, destChainSelector, destChainBridge, tokenId);
-        i_PawsBridge.bridgeNftWithData(destChainSelector, destChainBridge, data);
+        i_kittyBridge.bridgeNftWithData(destChainSelector, destChainBridge, data);
     }
 
-    function mintBridgedNFT(bytes memory data) external onlyPawsBridge {
+    function mintBridgedNFT(bytes memory data) external onlyKittyBridge {
         (
             address catOwner, 
             string memory catName, 
@@ -161,8 +161,8 @@ contract PawsConnect is ERC721 {
             address shopPartner
         ) = abi.decode(data, (address, string, string, string, uint256, address));
 
-        uint256 tokenId = PawsTokenCounter;
-        PawsTokenCounter++;
+        uint256 tokenId = kittyTokenCounter;
+        kittyTokenCounter++;
 
         s_catInfo[tokenId] = CatInfo({
             catName: catName,
@@ -219,23 +219,23 @@ contract PawsConnect is ERC721 {
     }
     
     function getTokenCounter() external view returns (uint256) {
-        return PawsTokenCounter;
+        return kittyTokenCounter;
     }
 
-    function getPawsConnectOwner() external view returns (address) {
-        return i_PawsConnectOwner;
+    function getKittyConnectOwner() external view returns (address) {
+        return i_kittyConnectOwner;
     }
 
-    function getAllPawsShops() external view returns (address[] memory) {
-        return s_PawsShops;
+    function getAllKittyShops() external view returns (address[] memory) {
+        return s_kittyShops;
     }
 
-    function getPawsShopAtIdx(uint256 idx) external view returns (address) {
-        return s_PawsShops[idx];
+    function getKittyShopAtIdx(uint256 idx) external view returns (address) {
+        return s_kittyShops[idx];
     }
 
-    function getIsPawsPartnerShop(address partnerShop) external view returns (bool) {
-        return s_isPawsShop[partnerShop];
+    function getIsKittyPartnerShop(address partnerShop) external view returns (bool) {
+        return s_isKittyShop[partnerShop];
     }
 
     function getCatInfo(uint256 tokenId) external view returns (CatInfo memory) {
@@ -246,7 +246,7 @@ contract PawsConnect is ERC721 {
         return s_ownerToCatsTokenId[user];
     }
 
-    function getPawsBridge() external view returns (address) {
-        return address(i_PawsBridge);
+    function getKittyBridge() external view returns (address) {
+        return address(i_kittyBridge);
     }
 }
