@@ -1,0 +1,9 @@
+[submodule "Paw-Connect/lib/forge-std"]
+	path = Paw-Connect/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "Paw-Connect/lib/openzeppelin-contracts"]
+	path = Paw-Connect/lib/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts
+[submodule "Paw-Connect/lib/ccip"]
+	path = Paw-Connect/lib/ccip
+	url = https://github.com/smartcontractkit/ccip
